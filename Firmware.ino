@@ -1,8 +1,7 @@
 /*
- *  Version WiFi
- *  Cómo acceder a diferentes opciones
- *  Para manejar las salidas: IP_ADDRESS/OnOff?handle=1 (MOBILE 1)
- *  Para prender todos handle=0 y apagar todos handle=9
+ *  WiFi Version 
+ *  endpoint IP_ADDRESS/OnOff?handle=1 (MOBILE 1)
+ *  Use handle=0 to turn off all and handle=9 to turn on all
  */
 
 #include <ESP8266WiFi.h>
@@ -11,20 +10,15 @@
 #define MaxAttempts 20
 
 
-// sin uso porque no recibe un String el digitalWrite
-/*#define MOBILE1 5 // es el GPIO15 la salida D1 
-#define MOBILE2 4 // es el GPIO13 la salida D2 
-#define MOBILE3 0 // es el GPIO12 la salida D3
-#define MOBILE4 2 // es el GPIO14 la salida D4*/
-
-// usado para mapear los GPIO
+// GPIO mapping ports
 byte MOBILES[]= {5,4,0,2};
-
+// actual state of mobiles
 byte actualState[]={0,0,0,0};
+// parameter received by the serial port 
 byte inByte=0;
+// flags 
 boolean configured=false;
 boolean started=false;
-//String mobile="MOBILE";
 
 ESP8266WebServer server(80);
 
@@ -32,7 +26,7 @@ void setup(){
   // for serial use
   Serial.begin(115200);
   while (!Serial){}
-  Serial.println("Ingrese SSID PASS");
+  Serial.println("Enter SSID PASS");
   // preparing digital outputs
   pinMode(MOBILES[0],OUTPUT);
   pinMode(MOBILES[1],OUTPUT);
@@ -44,7 +38,7 @@ void setup(){
   digitalWrite(MOBILES[2], !actualState[2]);
   digitalWrite(MOBILES[3], !actualState[3]);
   // reset Wifi connection 
-  WiFi.disconnect();// sino queda el ultimo usado en la flash
+  WiFi.disconnect();
 }
 
 void loop(void) {
@@ -74,10 +68,10 @@ void loop(void) {
 }
 
 boolean wifiConnect(String ssid, String pass){
-  WiFi.mode(WIFI_STA);//Cambiar modo del Wi-Fi a Station y no AP
+  WiFi.mode(WIFI_STA);
   delay(100);
-  WiFi.begin(ssid, pass); // si no se hace el disconnect del setup toma la ultima config de la flash
-  Serial.print("Conectando a Wifi");
+  WiFi.begin(ssid, pass);
+  Serial.print("Connecting Wifi");
   byte attempts=0;
   while (attempts<MaxAttempts && WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
@@ -94,17 +88,17 @@ boolean wifiConnect(String ssid, String pass){
   }
   else{
     Serial.println(" ");
-    Serial.println("No se pudo conectar a la red " + ssid + ". SSID o PASS erróneos. Vuelva a ingresar SSID PASS");
+    Serial.println("Can't connect to " + ssid + ". SSID o PASS wrong. Try again SSID PASS");
     return false;
   }
 }
 
-// esta funcion permite manejar los 4 moviles de manera independiente
+// this function allows mannaging four mobiles separatly
 String manageMobileAlone(byte in){
   String msg;
   char buf[1];
   in-=48;
-  // apagar o prender todos juntos
+  // turn on or turn off all together
   if (in==0 || in==9){
     in==9?in=1:in=0;
     for (int i=0;i<4;i++){
@@ -112,12 +106,12 @@ String manageMobileAlone(byte in){
       digitalWrite(MOBILES[i], !actualState[i]);
     } 
   }
-  // prender 1 movil independientemente del resto
+  // turn on mobile 1 regardless of the rest
   else if (in>=1 && in<=4){
         actualState[in-1]=1;
         digitalWrite(MOBILES[in-1], !actualState[in-1]);
   }
-  // apagar 1 movil independientemente del resto
+  // turn off mobile 1 regardless of the rest
   else if (in>=5 && in<=8){
         actualState[in-5]=0;
         digitalWrite(MOBILES[in-5], !actualState[in-5]);
@@ -133,20 +127,18 @@ String manageMobileAlone(byte in){
   return msg;
 }
 
-/////// SERVIDOR WEB ///////////////////////////////////////////////////////
+/////// WEB  SERVER ///////////////////////////////////////////////////////
 boolean initServer(){
   server.on("/OnOff", handleMobiles);
   server.begin();
   return true;
 }
 
-//root page can be accessed only if authentication is ok
 void handleMobiles() {
   Serial.println("Mobiles Management");
   String header;
   String content = "<html><body><H2>Mobiles management</H2><br>";
   if (server.hasArg("handle")) {
-    // 192.168.0.117/OnOff?handle=1
     inByte = (server.arg("handle")).charAt(0);
     String msg=manageMobileAlone(inByte);
     Serial.println(msg);
@@ -156,4 +148,4 @@ void handleMobiles() {
     server.send(301);
     return;
     }
-}   
+}
