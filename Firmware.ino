@@ -106,12 +106,12 @@ String manageMobileAlone(byte in){
       digitalWrite(MOBILES[i], !actualState[i]);
     } 
   }
-  // turn on mobile 1 regardless of the rest
+  // turn on mobile 1 to 4 regardless of the rest
   else if (in>=1 && in<=4){
         actualState[in-1]=1;
         digitalWrite(MOBILES[in-1], !actualState[in-1]);
   }
-  // turn off mobile 1 regardless of the rest
+  // turn off mobile 1 to 4 regardless of the rest
   else if (in>=5 && in<=8){
         actualState[in-5]=0;
         digitalWrite(MOBILES[in-5], !actualState[in-5]);
